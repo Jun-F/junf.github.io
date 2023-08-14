@@ -1,0 +1,350 @@
+<!doctype html><html lang=zh-CN data-theme=light><head><meta charset=utf-8><meta name=viewport content="width=device-width"><meta name=theme-color content="#222" media="(prefers-color-scheme: light)"><meta name=generator content="Hugo 0.114.1"><link rel="shortcut icon" type=image/x-icon href=/imgs/icons/favicon.ico><link rel=icon type=image/x-icon href=/imgs/icons/favicon.ico><link rel=icon type=image/png sizes=16x16 href=/imgs/icons/favicon_16x16_next.png><link rel=icon type=image/png sizes=32x32 href=/imgs/icons/favicon_32_32_next.png><link rel=apple-touch-icon sizes=180x180 href=/imgs/icons/apple_touch_icon_next.png><meta itemprop=name content="在Go中初始化大型static Maps"><meta itemprop=description content="Initializing Large Static Maps in Go"><meta itemprop=datePublished zgotmplz><meta itemprop=dateModified zgotmplz><meta itemprop=image content="https://s3.bmp.ovh/imgs/2023/06/27/181538d5761921f1.png"><meta itemprop=keywords content="go"><meta property="og:type" content="article"><meta property="og:title" content="在Go中初始化大型static Maps"><meta property="og:description" content="Initializing Large Static Maps in Go"><meta property="og:image" content="https://s3.bmp.ovh/imgs/2023/06/27/181538d5761921f1.png"><meta property="og:image:width" content="312"><meta property="og:image:height" content="312"><meta property="og:image:type" content="image/jpeg/png/svg/jpg"><meta property="og:url" content="https://junfpyblog.tk/posts/static-map-initialization-in-go/"><meta property="og:site_name" content="知足常乐"><meta property="og:locale" content="zh-CN"><meta property="article:author" content="Aaron Son"><meta property="article:published_time" content="2023-06-27 16:00:44 +0800 CST"><meta property="article:modified_time" content="2023-06-27 16:00:44 +0800 CST"><link type=text/css rel=stylesheet href=https://cdn.staticfile.org/font-awesome/6.1.2/css/all.min.css><link type=text/css rel=stylesheet href=https://cdn.staticfile.org/animate.css/3.1.1/animate.min.css><link type=text/css rel=stylesheet href=https://cdn.staticfile.org/viewerjs/1.11.0/viewer.min.css><link rel=stylesheet href=/css/main.min.382b0e2b33908c82ce34426618d1948914ff32308eaf6546a11b88ed0ef029ad.css><style type=text/css>.post-footer,.flinks-list-footer hr:after{content:"~ 我可是有底线的哟 ~"}</style><script type=text/javascript>(function(){localDB={set:function(e,t,n){if(n===0)return;const s=new Date,o=n*864e5,i={value:t,expiry:s.getTime()+o};localStorage.setItem(e,JSON.stringify(i))},get:function(e){const t=localStorage.getItem(e);if(!t)return void 0;const n=JSON.parse(t),s=new Date;return s.getTime()>n.expiry?(localStorage.removeItem(e),void 0):n.value}},theme={active:function(){const e=localDB.get("theme");if(e==null)return;theme.toggle(e),window.matchMedia("(prefers-color-scheme: dark)").addListener(function(e){theme.toggle(e.matches?"dark":"light")})},toggle:function(e){document.documentElement.setAttribute("data-theme",e),localDB.set("theme",e,2);const t=document.querySelector("iframe.giscus-frame");if(t){const n={setConfig:{theme:e}};t.contentWindow.postMessage({giscus:n},"https://giscus.app")}}},theme.active()})(window)</script><script class=next-config data-name=page type=application/json>{"comments":true,"isHome":false,"isPage":true,"path":"static-map-initialization-in-go","permalink":"https://junfpyblog.tk/posts/static-map-initialization-in-go/","title":"在Go中初始化大型static Maps"}</script><script type=text/javascript>document.addEventListener("DOMContentLoaded",()=>{var e=document.createElement("script");e.charset="UTF-8",e.src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js",e.async=!1,e.defer=!0,document.head.appendChild(e),e.onload=function(){NexT.utils.fmtBusuanzi()}})</script><title>在Go中初始化大型static Maps - 知足常乐</title><noscript><link rel=stylesheet href=/css/noscript.css></noscript></head><body itemscope itemtype=http://schema.org/WebPage class=use-motion><div class=headband></div><main class=main><header class=header itemscope itemtype=http://schema.org/WPHeader><div class=header-inner><div class=site-brand-container><div class=site-nav-toggle><div class=toggle aria-label role=button><span class=toggle-line></span>
+<span class=toggle-line></span>
+<span class=toggle-line></span></div></div><div class=site-meta><a href=/ class=brand rel=start><i class=logo-line></i><h1 class=site-title>知足常乐</h1><i class=logo-line></i></a><p class=site-subtitle itemprop=description></p></div><div class=site-nav-right><div class="toggle popup-trigger"><i class="fa fa-search fa-fw fa-lg"></i></div></div></div><nav class=site-nav><ul class="main-menu menu"><li class="menu-item menu-item-home"><a href=/ class=hvr-icon-pulse rel=section><i class="fa fa-home hvr-icon"></i>首页</a></li><li class="menu-item menu-item-search"><a role=button class="popup-trigger hvr-icon-pulse"><i class="fa fa-search fa-fw hvr-icon"></i>搜索</a></li></ul></nav><div class=search-pop-overlay><div class="popup search-popup"><div class=search-header><span class=search-icon><i class="fa fa-search"></i></span><div class=search-input-container><input autocomplete=off autocapitalize=off maxlength=80 placeholder=搜索... spellcheck=false type=search class=search-input></div><span class=popup-btn-close role=button><i class="fa fa-times-circle"></i></span></div><div class="search-result-container no-result"><div class=search-result-icon><i class="fa fa-spinner fa-pulse fa-5x"></i></div></div></div></div></div><div class="toggle sidebar-toggle" role=button><span class=toggle-line></span>
+<span class=toggle-line></span>
+<span class=toggle-line></span></div><aside class=sidebar><div class="sidebar-inner sidebar-overview-active"><ul class=sidebar-nav><li class=sidebar-nav-toc>文章目录</li><li class=sidebar-nav-overview>站点概览</li></ul><div class=sidebar-panel-container><div class="post-toc-wrap sidebar-panel"><div class="post-toc animated"><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#static-map-初始化>Static Map 初始化</a></li><li><a href=#对开发工作流程的影响>对开发工作流程的影响</a></li><li><a href=#一些解决方法>一些解决方法</a><ul><li><a href=#排序的静态数组>排序的静态数组</a></li><li><a href=#使用embed减少代码量>使用embed减少代码量</a></li><li><a href=#懒加载maps>懒加载Maps</a></li><li><a href=#完美哈希>完美哈希</a></li><li><a href=#总结>总结</a></li></ul></li></ul></nav></div></div><div class="site-overview-wrap sidebar-panel"><div class="site-author site-overview-item animated" itemprop=author itemscope itemtype=http://schema.org/Person><img class=site-author-image itemprop=image alt=Jun src=/imgs/img-lazy-loading.gif data-src=https://s3.bmp.ovh/imgs/2023/06/27/181538d5761921f1.png><p class=site-author-name itemprop=name>Jun</p><div class=site-description itemprop=description></div></div><div class="site-state-wrap site-overview-item animated"><nav class=site-state><div class="site-state-item site-state-posts"><a href=/archives/><span class=site-state-item-count>3</span>
+<span class=site-state-item-name>日志</span></a></div><div class="site-state-item site-state-categories"><a href=/categories/><span class=site-state-item-count>1</span>
+<span class=site-state-item-name>分类</span></a></div><div class="site-state-item site-state-tags"><a href=/tags/><span class=site-state-item-count>3</span>
+<span class=site-state-item-name>标签</span></a></div></nav></div><div class="links-of-social site-overview-item animated"></div></div></div></div><div id=siteinfo-card-widget class=sidebar-card-widget><div class=item-headline><i class="fas fa-chart-line"></i>
+<span>网站资讯</span></div><div class=siteinfo><div class=siteinfo-item><div class=item-name><i class="fa-solid fa-calendar-check"></i>已运行：</div><div class=item-count id=runTimes data-publishdate=2023-06-26T17:00:13+08:00></div></div><div class=siteinfo-item><div class=item-name><i class="fas fa fa-user"></i>总访客数：</div><div class=item-count id=busuanzi_value_site_uv><i class="fa fa-sync fa-spin"></i></div></div><div class=siteinfo-item><div class=item-name><i class="fas fa fa-eye"></i>页面浏览：</div><div class=item-count id=busuanzi_value_site_pv><i class="fa fa-sync fa-spin"></i></div></div><div class=siteinfo-item><div class=item-name><i class="fa fa-font"></i>总字数：</div><div class=item-count id=wordsCount data-count=7583></div></div><div class=siteinfo-item><div class=item-name><i class="fa fa-mug-hot"></i>阅读约：</div><div class=item-count id=readTimes data-times=17></div></div><div class=siteinfo-item><div class=item-name><i class="fa fa-clock-rotate-left"></i>最后更新于：</div><div class=item-count id=last-push-date data-lastpushdate=2023-07-13T11:15:37+08:00></div></div></div></div></aside><div class=sidebar-dimmer></div></header><div class=tool-buttons><div id=goto-comments class="button goto-comments" title=直达评论><i class="fas fa-comments"></i></div><div id=toggle-theme class=button title=深浅模式切换><i class="fas fa-adjust"></i></div><div class=back-to-top role=button title=返回顶部><i class="fa fa-arrow-up"></i>
+<span>0%</span></div></div><div class=reading-progress-bar></div><noscript><div class=noscript-warning>Theme NexT works best with JavaScript enabled</div></noscript><div class="main-inner post posts-expand"><div class=post-block><article itemscope itemtype=http://schema.org/Article class=post-content lang><link itemprop=mainEntityOfPage href=https://junfpyblog.tk/posts/static-map-initialization-in-go/><span hidden itemprop=author itemscope itemtype=http://schema.org/Person><meta itemprop=image content="https://s3.bmp.ovh/imgs/2023/06/27/181538d5761921f1.png"><meta itemprop=name content="Aaron Son"></span><span hidden itemprop=publisher itemscope itemtype=http://schema.org/Organization><meta itemprop=name content="Jun"><meta itemprop=description content></span><span hidden itemprop=post itemscope itemtype=http://schema.org/CreativeWork><meta itemprop=name content="在Go中初始化大型static Maps"><meta itemprop=description content="Initializing Large Static Maps in Go"></span><header class=post-header><h1 class=post-title itemprop="name headline">在Go中初始化大型static Maps
+<a href=https://github.com/user-name/repo-name/tree/branch-name/subdirectory-name/posts/static-map-initialization-in-go.md rel="noopener external nofollow noreferrer" target=_blank class="exturl post-edit-link" title=编辑><i class="fa fa-pen-nib"></i></a></h1><div class=post-meta-container><div class=post-meta-items><span class=post-meta-item><span class=post-meta-item-icon><i class="far fa-calendar"></i></span>
+<span class=post-meta-item-text title=发表于>发表于：</span>
+<time title="创建时间：2023-06-27 16:00:44 +0800 CST" itemprop="dateCreated datePublished" datetime="2023-06-27 16:00:44 +0800 CST">2023-06-27</time></span>
+<span class=post-meta-item><span class=post-meta-item-icon><i class="far fa-folder-open"></i></span>
+<span class=post-meta-item-text title=分类于>分类于：</span>
+<span itemprop=about itemscope itemtype=http://schema.org/Thing><a href=/categories/go itemprop=url rel=index><span itemprop=name>go</span></a></span></span></div><div class=post-meta-items><span class=post-meta-item title=字数><span class=post-meta-item-icon><i class="far fa-file-word"></i></span>
+<span class=post-meta-item-text>字数：</span>
+<span>5902</span></span>
+<span class=post-meta-item title=阅读><span class=post-meta-item-icon><i class="far fa-clock"></i></span>
+<span class=post-meta-item-text>阅读：&ap;</span>
+<span>12分钟</span></span></div></div></header><div class=post-body itemprop=articleBody><p>文章翻译，原文链接：https://www.dolthub.com/blog/2023-06-16-static-map-initialization-in-go/</p><p>这篇文章讨论了Go二进制文件中map数据的静态初始化的技术细节，以及处理性能影响的一些替代策略。这是我们技术博客系列中的一部分。我们每三周发布一篇新的系列文章。</p><p>在Dolt中，我们正在构建一个带有类似Git版本控制功能的SQL数据库。
+它支持克隆、推送、拉取、分支、合并和差异等所有核心Git习语。
+它使用Go语言实现，其协议和SQL方言与MySQL兼容。</p><p>在过去的几个月中，我们一直在改进我们的SQL引擎中的排序规则和Unicode支持。
+我们所做的一个改变是向Dolt中添加了一些数据表，以更好地支持不同Unicode区域设置下字符串的本地化排序。
+这涉及向Dolt二进制文件中添加了许多静态数据表。 我们最初的实现是使用static Maps，将这些maps编译到Dolt二进制文件中。
+不久之后，一位同事在一个Pull Request中添加了许多大型static Maps到Dolt后，我们发现端到端测试变得非常缓慢。
+这促使我们深入研究Go中static Map初始化的工作原理，并在后续版本中解决这个回归问题：</p><img src=https://s3.bmp.ovh/imgs/2023/06/27/287cd5993fdee4ec.jpg><p>这篇博客是对Go工具链中static Maps初始化的实现方式进行简要探索，以及它在运行时的开销成本以及一些备选方法，用于在需要时处理相关问题。</p><h2 id=背景>背景
+<a class=header-anchor href=#%e8%83%8c%e6%99%af></a></h2><p>Dolt与MySQL一样，并且作为其MySQL兼容性的一部分，支持字符串的语言相关排序。
+语言相关排序涉及将字符串相互比较，并得出语言用户所期望的相对顺序。
+对于大多数字符编码和区域设置而言，这比简单比较字符串中字符或代码点的二进制表示更为复杂。原因包括：</p><ol><li>相同字符串的不同表示在给定字符编码中可以有不同的二进制表示形式，根据用户在屏幕上的显示方式。例如，在UTF-32中，法语单词"où"可以用两个代码单元表示为：[U+006F, U+00F9]，或者用三个代码单元表示，带有表示重音的组合附加符号：[U+006F, U+0300, U+0075]。</li><li>不同语言对于相同字符的相对顺序有不同的规则。例如，在德语区域设置下，字符串列表[&ldquo;Aa&rdquo;, &ldquo;Od&rdquo;, &ldquo;Öd&rdquo;, &ldquo;Zz&rdquo;]应按相同顺序排序，但在瑞典语区域设置下应排序为[&ldquo;Aa&rdquo;, &ldquo;Od&rdquo;, &ldquo;Zz&rdquo;, &ldquo;Öd&rdquo;]。</li></ol><p>你可以在Dolt中看到这一点的实际应用：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-shell data-lang=shell><span style=display:flex><span>collations&gt; create table german <span style=color:#f92672>(</span>word varchar<span style=color:#f92672>(</span>32<span style=color:#f92672>)</span> primary key<span style=color:#f92672>)</span> collate utf8mb4_de_pb_0900_as_cs;
+</span></span><span style=display:flex><span>collations&gt; create table swedish <span style=color:#f92672>(</span>word varchar<span style=color:#f92672>(</span>32<span style=color:#f92672>)</span> primary key<span style=color:#f92672>)</span> collate utf8mb4_sv_0900_as_cs;
+</span></span><span style=display:flex><span>collations&gt; insert into german values <span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Aa&#34;</span><span style=color:#f92672>)</span>,<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Od&#34;</span><span style=color:#f92672>)</span>,<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Öd&#34;</span><span style=color:#f92672>)</span>,<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Zz&#34;</span><span style=color:#f92672>)</span>;
+</span></span><span style=display:flex><span>Query OK, <span style=color:#ae81ff>4</span> rows affected <span style=color:#f92672>(</span>0.02 sec<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>collations&gt; insert into swedish values <span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Aa&#34;</span><span style=color:#f92672>)</span>,<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Od&#34;</span><span style=color:#f92672>)</span>,<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Öd&#34;</span><span style=color:#f92672>)</span>,<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Zz&#34;</span><span style=color:#f92672>)</span>;
+</span></span><span style=display:flex><span>Query OK, <span style=color:#ae81ff>4</span> rows affected <span style=color:#f92672>(</span>0.01 sec<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>collations&gt; <span style=color:#66d9ef>select</span> * from german order by word asc;
+</span></span><span style=display:flex><span>+------+
+</span></span><span style=display:flex><span>| word |
+</span></span><span style=display:flex><span>+------+
+</span></span><span style=display:flex><span>| Aa   |
+</span></span><span style=display:flex><span>| Od   |
+</span></span><span style=display:flex><span>| Öd   |
+</span></span><span style=display:flex><span>| Zz   |
+</span></span><span style=display:flex><span>+------+
+</span></span><span style=display:flex><span><span style=color:#ae81ff>4</span> rows in set <span style=color:#f92672>(</span>0.01 sec<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>collations&gt; <span style=color:#66d9ef>select</span> * from swedish order by word asc;
+</span></span><span style=display:flex><span>+------+
+</span></span><span style=display:flex><span>| word |
+</span></span><span style=display:flex><span>+------+
+</span></span><span style=display:flex><span>| Aa   |
+</span></span><span style=display:flex><span>| Od   |
+</span></span><span style=display:flex><span>| Zz   |
+</span></span><span style=display:flex><span>| Öd   |
+</span></span><span style=display:flex><span>+------+
+</span></span><span style=display:flex><span><span style=color:#ae81ff>4</span> rows in set <span style=color:#f92672>(</span>0.00 sec<span style=color:#f92672>)</span>
+</span></span></code></pre></div><p>由于存在这样的复杂性，实现与地区相关的排序通常涉及到调用排序算法相关的数据表，以获得字符串的适当顺序。</p><p>Dolt本身作为静态链接的二进制文件分发。我们非常喜欢它的分发模型的可接近性和易用性。
+您只需下载Dolt的操作系统适当版本并运行即可。
+因此，我们始终在二进制文件中提供这些表，以支持Dolt的排序。</p><p>Dolt的用户体验和典型交互方式与典型的SQL服务器也可能非常不同。
+具体而言，Dolt用户通常以两种不同的方式与Dolt交互：</p><ol><li>作为SQL服务器，长时间运行的Dolt进程通过TCP 和/或 Unix套接字接受SQL连接。</li><li>作为独立的二进制文件，在类似Git的工作流中频繁调用Dolt CLI来执行诸如创建分支、运行临时SQL查询、查看提交日志和执行合并等操作。</li></ol><p>后一种情况与传统RDBMS实现的典型交互方式非常不同，这意味着使用Dolt的用户体验可能在很大程度上受到Dolt二进制启动延迟的影响。</p><p>我的同事最近向Dolt二进制文件添加了32MB以上的排序数据表，以更好地支持MySQL支持的许多Unicode排序。
+这些最初是以与现有排序实现完全相同的方式完成的。
+数据负载的大部分是作为静态初始化的Go map实现的，类似于：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>rune</span>]<span style=color:#66d9ef>int32</span>{
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>9</span>:     <span style=color:#ae81ff>0</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>10</span>:    <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>11</span>:    <span style=color:#ae81ff>2</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>12</span>:    <span style=color:#ae81ff>3</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>13</span>:    <span style=color:#ae81ff>4</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>133</span>:   <span style=color:#ae81ff>5</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>8232</span>:  <span style=color:#ae81ff>6</span>,
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	<span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	<span style=color:#75715e>// ... 24000+ lines later ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	<span style=color:#ae81ff>65534</span>: <span style=color:#ae81ff>59403</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>65535</span>: <span style=color:#ae81ff>59404</span>,
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>PR合并后不久，我们注意到我们的端到端测试变得非常慢。
+当我们进行基准测试时，发现由于static Maps，dolt &ndash;help的速度变慢了300%以上。
+在意识到static Maps的运行时初始化成本后，我们将它们移动到embed数据文件中，在需要时再加载，修复了整个回归。</p><p>让我们来看看Go static Maps初始化的工作原理以及我们对其运行时开销的预期。</p><h2 id=static-map-初始化>Static Map 初始化
+<a class=header-anchor href=#static-map-%e5%88%9d%e5%a7%8b%e5%8c%96></a></h2><p>static Maps的初始化发生在创建一个具有初始内容的Map时，该Map位于Go包的顶层。
+与某些其他静态数据类型（包括原始类型、字符串、切片和所有这些类型的结构体）不同，
+在Go中，static Maps是在程序初始化时动态分配和赋值的，而不是将其内容放到内存中并写入编译二进制文件的数据段中。例如：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>main</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>mymap</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>int</span>]<span style=color:#66d9ef>int</span>{
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>1</span>: <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>2</span>: <span style=color:#ae81ff>2</span>,
+</span></span><span style=display:flex><span>	<span style=color:#ae81ff>3</span>: <span style=color:#ae81ff>3</span>,
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Go编译器将调用一个init函数，其中包括分配map并将元素插入其中。
+代码看起来几乎与以下Go代码序列完全相同：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>mymap</span> = make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>int</span>]<span style=color:#66d9ef>int</span>, <span style=color:#ae81ff>3</span>)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>mymap</span>[<span style=color:#ae81ff>1</span>] = <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>mymap</span>[<span style=color:#ae81ff>2</span>] = <span style=color:#ae81ff>2</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>mymap</span>[<span style=color:#ae81ff>3</span>] = <span style=color:#ae81ff>3</span>
+</span></span></code></pre></div><p>调用了<code>runtime.makemap_small</code>和三次调用<code>runtime.mapassign_fast64</code>。</p><p>在当前版本的golang编译器中，随着map的大小变化，这种方法会略微改变。
+受到代码大小的限制，如果map中有超过25个条目，编译器将移动键和值数据到静态数组中。
+在这种情况下，init代码会循环遍历静态数组数据并将其插入动态分配的map中。</p><p>总体效果是，static Maps初始化的成本随着Go二进制文件中static Maps大小的增加大约呈线性增长。
+在一些本地运行的实验中，我看到以下的缩放行为：
+<img src=https://s3.bmp.ovh/imgs/2023/06/27/571efcb70763d62d.jpg>
+我们可以看到，一旦map初始化的成本高到足以开始产生影响，其成本就会近似于线性增长。</p><h2 id=对开发工作流程的影响>对开发工作流程的影响
+<a class=header-anchor href=#%e5%af%b9%e5%bc%80%e5%8f%91%e5%b7%a5%e4%bd%9c%e6%b5%81%e7%a8%8b%e7%9a%84%e5%bd%b1%e5%93%8d></a></h2><p>除了生成的二进制文件的启动成本外，以static Maps初始化的形式存在的巨大代码也对编译时间和诸如go vet之类的操作的内存开销产生了负面影响。
+这一点并不令人惊讶，因为需要编译的代码量要大得多。
+在一个测试程序中，该程序包含一个具有2^20个整数条目的map，总共占据17MB的磁盘空间，
+go vet的最大常驻堆利用率超过了1.5GB，go build的常驻堆利用率超过了1.2GB，
+构建该软件包需要超过12秒的时间。</p><h2 id=一些解决方法>一些解决方法
+<a class=header-anchor href=#%e4%b8%80%e4%ba%9b%e8%a7%a3%e5%86%b3%e6%96%b9%e6%b3%95></a></h2><p>考虑到相关成本，我们可以采取许多不同的方法，以在启动开销、代码易用性和可访问性以及生成的初始化数据结构中可用的各种功能方面进行不同的权衡。
+在这里，我们将讨论三个令人信服的替代方案，这些方案在转换后的复杂性和可用功能方面有所不同。根据您的用例，这些替代方案中的任何一个或所有方案都可能是合适的。</p><h3 id=排序的静态数组>排序的静态数组
+<a class=header-anchor href=#%e6%8e%92%e5%ba%8f%e7%9a%84%e9%9d%99%e6%80%81%e6%95%b0%e7%bb%84></a></h3><p>如果你能负担得起在二进制文件中嵌入的任何表的查找路径上的O(lg n)比较，
+而且你主要关心的是启动开销，而不一定是与大的代码有效载荷相关的资源开销，
+那么把maps转换成一个排序的静态数组可能是一个选择。使用这种方法，你会失去：</p><ol><li>数据结构在运行时易于更改。</li><li>O(1) 时间复杂度</li></ol><p>采用这种方法，您可能会牺牲嵌入式数组文字的易于手动编辑性。
+如果采用这种方法，文字实际上需要进行排序，因此您应编写单元测试来进行断言。
+作为额外的好处，这些同样的单元测试还可以在失败时生成嵌入排序结果的代码，以便开发人员可以轻松地将正确结果复制到代码中。</p><p>采用这种方法，上面的示例map可能如下所示：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>RuneCollationWeight</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>R</span> <span style=color:#66d9ef>rune</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>W</span> <span style=color:#66d9ef>int</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>RuneCollationWeights</span> []<span style=color:#a6e22e>RuneCollationWeight</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>RuneCollationWeights</span>) <span style=color:#a6e22e>Len</span>() <span style=color:#66d9ef>int</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> len(<span style=color:#a6e22e>w</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>RuneCollationWeights</span>) <span style=color:#a6e22e>Less</span>(<span style=color:#a6e22e>i</span>, <span style=color:#a6e22e>j</span> <span style=color:#66d9ef>int</span>) <span style=color:#66d9ef>bool</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>i</span>].<span style=color:#a6e22e>R</span> &lt; <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>j</span>].<span style=color:#a6e22e>R</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>RuneCollationWeights</span>) <span style=color:#a6e22e>Swap</span>(<span style=color:#a6e22e>i</span>, <span style=color:#a6e22e>j</span> <span style=color:#66d9ef>int</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>i</span>], <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>j</span>] = <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>j</span>], <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>i</span>]
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>RuneCollationWeights</span>) <span style=color:#a6e22e>Get</span>(<span style=color:#a6e22e>r</span> <span style=color:#66d9ef>rune</span>) (<span style=color:#66d9ef>int</span>, <span style=color:#66d9ef>bool</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>n</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>sort</span>.<span style=color:#a6e22e>Search</span>(<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>Len</span>(), <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>i</span> <span style=color:#66d9ef>int</span>) <span style=color:#66d9ef>bool</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>i</span>].<span style=color:#a6e22e>R</span> <span style=color:#f92672>&gt;=</span> <span style=color:#a6e22e>r</span>
+</span></span><span style=display:flex><span>	})
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>entry</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>n</span>]
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>entry</span>.<span style=color:#a6e22e>R</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>r</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>entry</span>.<span style=color:#a6e22e>W</span>, <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>	} <span style=color:#66d9ef>else</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>, <span style=color:#66d9ef>false</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights</span> = <span style=color:#a6e22e>RuneCollationWeights</span>{
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>9</span>, <span style=color:#ae81ff>0</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>10</span>, <span style=color:#ae81ff>1</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>11</span>, <span style=color:#ae81ff>2</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>12</span>, <span style=color:#ae81ff>3</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>13</span>, <span style=color:#ae81ff>4</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>133</span>, <span style=color:#ae81ff>5</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>8232</span>, <span style=color:#ae81ff>6</span>},
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	<span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	<span style=color:#75715e>// ... 24000+ lines later ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	{<span style=color:#ae81ff>65534</span>, <span style=color:#ae81ff>59403</span>},
+</span></span><span style=display:flex><span>	{<span style=color:#ae81ff>65535</span>, <span style=color:#ae81ff>59404</span>},
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>这里的代码实现了<code>sort.Interface</code>，因此可以进行一些健全性测试，例如<code>sort.IsSorted(utf16_spanish_ci_Weights)</code>。</p><h3 id=使用embed减少代码量>使用embed减少代码量
+<a class=header-anchor href=#%e4%bd%bf%e7%94%a8embed%e5%87%8f%e5%b0%91%e4%bb%a3%e7%a0%81%e9%87%8f></a></h3><p>根据实际情况，在 Go 代码中保留数组可能会对开发人员的工作效率产生不良影响， 例如编译和 go vet 时间的开销。
+Go 通过其 embed 包提供了一种非常简单的方法，可以将二进制有效负载嵌入为 []bytes，甚至可以将整个目录树作为 fs.FS 实现嵌入。</p><p>使用这种方法，可以将大型静态数组从 Go 代码本身移出，并放入外部文件中。
+在这样做时，需要考虑将数据本身序列化到外部文件中。该序列化需要以跨平台的方式进行处理。
+还需要添加能够在更改文件时生成这些文件的程序或构建过程。
+对于上面的示例，可以编写一个简单的程序，将数据序列化为大端 int32：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>SerializeWeights</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Writer</span>, <span style=color:#a6e22e>weights</span> <span style=color:#a6e22e>RuneCollationWeights</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>sort</span>.<span style=color:#a6e22e>Sort</span>(<span style=color:#a6e22e>weights</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>weight</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>weights</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span> &gt; <span style=color:#a6e22e>math</span>.<span style=color:#a6e22e>MaxInt32</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;cannot serialize weights: weight for %d, %d, is larger than MaxInt32&#34;</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span>)
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span> &lt; <span style=color:#a6e22e>math</span>.<span style=color:#a6e22e>MinInt32</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;cannot serialize weights: weight for %d, %d, is smaller than MinInt32&#34;</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span>)
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Write</span>(<span style=color:#a6e22e>w</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, int32(<span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>))
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Write</span>(<span style=color:#a6e22e>w</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, int32(<span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span>))
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>正如您所看到的，我们可以选择将权重排序作为构建步骤的一部分，这可能会使与这些生成器程序源代码一起检入的数组的处理更加容易。
+要将这些文件发布并在二进制文件中使用它们，我们可以采用上述方法，但这次利用使用 embed 包生成的文件：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>import</span> <span style=color:#a6e22e>_</span> <span style=color:#e6db74>&#34;embed&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//go:embed utf16_spanish_ci_Weights.bin
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_bin</span> []<span style=color:#66d9ef>byte</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>BinaryRuneCollationWeights</span> []<span style=color:#66d9ef>byte</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>BinaryRuneCollationWeights</span>) <span style=color:#a6e22e>Len</span>() <span style=color:#66d9ef>int</span> {
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// There are two 32-bit integers per entry
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	<span style=color:#66d9ef>return</span> len(<span style=color:#a6e22e>w</span>) <span style=color:#f92672>/</span> <span style=color:#ae81ff>8</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>BinaryRuneCollationWeights</span>) <span style=color:#a6e22e>Get</span>(<span style=color:#a6e22e>r</span> <span style=color:#66d9ef>rune</span>) (<span style=color:#66d9ef>int</span>, <span style=color:#66d9ef>bool</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>n</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>sort</span>.<span style=color:#a6e22e>Search</span>(<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>Len</span>(), <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>i</span> <span style=color:#66d9ef>int</span>) <span style=color:#66d9ef>bool</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>entryR</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>i</span><span style=color:#f92672>*</span><span style=color:#ae81ff>8</span>:])
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> rune(<span style=color:#a6e22e>entryR</span>) <span style=color:#f92672>&gt;=</span> <span style=color:#a6e22e>r</span>
+</span></span><span style=display:flex><span>	})
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>entryR</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>n</span><span style=color:#f92672>*</span><span style=color:#ae81ff>8</span>:])
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> rune(<span style=color:#a6e22e>entryR</span>) <span style=color:#f92672>==</span> <span style=color:#a6e22e>r</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> int(int32(<span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>w</span>[<span style=color:#a6e22e>n</span><span style=color:#f92672>*</span><span style=color:#ae81ff>8</span><span style=color:#f92672>+</span><span style=color:#ae81ff>4</span>:]))), <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>	} <span style=color:#66d9ef>else</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>, <span style=color:#66d9ef>false</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights</span> = <span style=color:#a6e22e>BinaryRuneCollationWeights</span>(<span style=color:#a6e22e>utf16_spanish_ci_Weights_bin</span>)
+</span></span></code></pre></div><h3 id=懒加载maps>懒加载Maps
+<a class=header-anchor href=#%e6%87%92%e5%8a%a0%e8%bd%bdmaps></a></h3><p>如果您想要 O(1) 时间复杂度，并且特别是如果您希望在用初始内容填充map后保持map运行时的可变性， 则在首次访问时懒加载map可能是一个不错的选择。
+如果您的程序不是所有运行都需要访问map（或在您有多个map的情况下不是所有map都需要访问），那么这尤其正确。
+实现这个的最简单方法是将map访问移至函数调用后面，并在该函数内使用 sync.Once 调用来填充map内容。类似于这样的东西：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>import</span> <span style=color:#e6db74>&#34;sync&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>rune</span>]<span style=color:#66d9ef>int</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_once</span> <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>Once</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>rune</span>]<span style=color:#66d9ef>int</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>utf16_spanish_ci_Weights_once</span>.<span style=color:#a6e22e>Do</span>(<span style=color:#66d9ef>func</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>utf16_spanish_ci_Weights_</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>rune</span>]<span style=color:#66d9ef>int</span>{
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>9</span>:     <span style=color:#ae81ff>0</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>10</span>:    <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>11</span>:    <span style=color:#ae81ff>2</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>12</span>:    <span style=color:#ae81ff>3</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>13</span>:    <span style=color:#ae81ff>4</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>133</span>:   <span style=color:#ae81ff>5</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>8232</span>:  <span style=color:#ae81ff>6</span>,
+</span></span><span style=display:flex><span>			<span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>			<span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>			<span style=color:#75715e>// ... 24000+ lines later ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>			<span style=color:#ae81ff>65534</span>: <span style=color:#ae81ff>59403</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ae81ff>65535</span>: <span style=color:#ae81ff>59404</span>,
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	})
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>每次访问您的map都应该通过 <code>utf16_spanish_ci_Weights()</code> 进行访问。
+如果您只关心启动初始化开销，那么这种转换就足够了。
+<code>utf16_spanish_ci_Weights()</code> 函数内部的代码几乎与 init 函数中编译的代码相同，
+但所有这些工作都被延迟到实际访问权重map时才执行。</p><p>如果您想要将代码负载本身从常见的编译、测试或依赖代码路径中取出，
+则可以像上面那样使用 embed，并从 sync.Once 回调中的序列化内容中构建map。类似于这样的东西：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>rune</span>]<span style=color:#66d9ef>int</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>utf16_spanish_ci_Weights_once</span>.<span style=color:#a6e22e>Do</span>(<span style=color:#66d9ef>func</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>bin</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_bin</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>utf16_spanish_ci_Weights_</span> = make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>rune</span>]<span style=color:#66d9ef>int</span>, len(<span style=color:#a6e22e>bin</span>) <span style=color:#f92672>/</span> <span style=color:#ae81ff>8</span>)
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>for</span> len(<span style=color:#a6e22e>bin</span>) &gt; <span style=color:#ae81ff>0</span> {
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>r</span> <span style=color:#f92672>:=</span> rune(<span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>bin</span>[:]))
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>w</span> <span style=color:#f92672>:=</span> int(int32(<span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>bin</span>[<span style=color:#ae81ff>4</span>:])))
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>utf16_spanish_ci_Weights_</span>[<span style=color:#a6e22e>r</span>] = <span style=color:#a6e22e>w</span>
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>bin</span> = <span style=color:#a6e22e>bin</span>[<span style=color:#ae81ff>8</span>:]
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	})
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>这是我们在 dolt 中实现的解决方案，因为它很简单，并且对使用这些数据表内容的代码影响最小。</p><h3 id=完美哈希>完美哈希
+<a class=header-anchor href=#%e5%ae%8c%e7%be%8e%e5%93%88%e5%b8%8c></a></h3><p>由于依赖于 embed 的解决方案需要外部程序处理数据表并将其放入程序可以使用的格式中（而不是仅仅依靠 Go 编译器的能力来布局程序的静态数据），
+因此我们可以进一步采用一种紧凑、哈希方式来布局数据，这仍然允许 O(1) 访问所有条目，
+但不需要在运行时构建map。我们想要的结构是一个查找表，建立在我们原始map中的键的计算最小完美哈希函数上。在Golang中有许多高质量的最小完美哈希实现。</p><p>我们为map的keys构建和序列化完美哈希函数，作为与map内容本身分开的有效负载。
+该有效负载通常比键和值本身的集合小得多。
+我们将键和值嵌入为单独的二进制有效负载，通过完美哈希间接引用。以下是使用 bbhash 包的运行示例：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>SerializeWeights</span>(<span style=color:#a6e22e>wWr</span>, <span style=color:#a6e22e>hWr</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Writer</span>, <span style=color:#a6e22e>weights</span> []<span style=color:#a6e22e>RuneCollationWeight</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>keys</span> <span style=color:#f92672>:=</span> make([]<span style=color:#66d9ef>uint64</span>, len(<span style=color:#a6e22e>weights</span>))
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>i</span>, <span style=color:#a6e22e>weight</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>weights</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>keys</span>[<span style=color:#a6e22e>i</span>] = uint64(<span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>hash</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>bbhash</span>.<span style=color:#a6e22e>New</span>(<span style=color:#a6e22e>bbhash</span>.<span style=color:#a6e22e>Gamma</span>, <span style=color:#a6e22e>keys</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>hash</span>.<span style=color:#a6e22e>MarshalBinary</span>(<span style=color:#a6e22e>hWr</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>ordered</span> <span style=color:#f92672>:=</span> make([]<span style=color:#a6e22e>RuneCollationWeight</span>, len(<span style=color:#a6e22e>weights</span>))
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>weight</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>weights</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>i</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>hash</span>.<span style=color:#a6e22e>Find</span>(uint64(<span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>)) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>ordered</span>[<span style=color:#a6e22e>i</span>] = <span style=color:#a6e22e>weight</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>weight</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>ordered</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span> &gt; <span style=color:#a6e22e>math</span>.<span style=color:#a6e22e>MaxInt32</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;cannot serialize weights: weight for %d, %d, is larger than MaxInt32&#34;</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span>)
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span> &lt; <span style=color:#a6e22e>math</span>.<span style=color:#a6e22e>MinInt32</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;cannot serialize weights: weight for %d, %d, is smaller than MinInt32&#34;</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>, <span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span>)
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Write</span>(<span style=color:#a6e22e>wWr</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, int32(<span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>R</span>))
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Write</span>(<span style=color:#a6e22e>wWr</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, int32(<span style=color:#a6e22e>weight</span>.<span style=color:#a6e22e>W</span>))
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>import</span> <span style=color:#a6e22e>_</span> <span style=color:#e6db74>&#34;embed&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//go:embed utf16_spanish_ci_Weights.bin
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_bin</span> []<span style=color:#66d9ef>byte</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//go:embed utf16_spanish_ci_Weights_hash.bin
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_hash_bin</span> []<span style=color:#66d9ef>byte</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights_hash</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>bbhash</span>.<span style=color:#a6e22e>BBHash</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>utf16_spanish_ci_Weights</span> <span style=color:#a6e22e>HashedRuneCollationWeights</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>init</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>var</span> <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>utf16_spanish_ci_Weights_hash</span>, <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>bbhash</span>.<span style=color:#a6e22e>UnmarshalBBHash</span>(<span style=color:#a6e22e>bytes</span>.<span style=color:#a6e22e>NewReader</span>(<span style=color:#a6e22e>utf16_spanish_ci_Weights_hash_bin</span>))
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		panic(<span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>utf16_spanish_ci_Weights</span> = <span style=color:#a6e22e>HashedRuneCollationWeights</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>H</span>: <span style=color:#a6e22e>utf16_spanish_ci_Weights_hash</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>B</span>: <span style=color:#a6e22e>utf16_spanish_ci_Weights_bin</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>HashedRuneCollationWeights</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>H</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>bbhash</span>.<span style=color:#a6e22e>BBHash</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>B</span> []<span style=color:#66d9ef>byte</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>HashedRuneCollationWeights</span>) <span style=color:#a6e22e>Get</span>(<span style=color:#a6e22e>r</span> <span style=color:#66d9ef>rune</span>) (<span style=color:#66d9ef>int</span>, <span style=color:#66d9ef>bool</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>i</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>h</span>.<span style=color:#a6e22e>Find</span>(uint64(<span style=color:#a6e22e>r</span>)) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>off</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>i</span> <span style=color:#f92672>*</span> <span style=color:#ae81ff>8</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>off</span> &lt; len(<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>B</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>entryR</span> <span style=color:#f92672>:=</span> rune(<span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>B</span>[<span style=color:#a6e22e>off</span>:]))
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>entryW</span> <span style=color:#f92672>:=</span> int(int32(<span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>.<span style=color:#a6e22e>Uint32</span>(<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>B</span>[<span style=color:#a6e22e>off</span><span style=color:#f92672>+</span><span style=color:#ae81ff>4</span>:])))
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>entryR</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>r</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>entryW</span>, <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>, <span style=color:#66d9ef>false</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>如果您试图削减初始化开销，那么这可能是您想要采取的方法，
+但实际上有很大一部分二进制调用实际上确实需要访问这些嵌入式数据表的至少一些部分。
+在这种情况下，无法避免支付初始化开销，因此最好尽可能少。</p><p>这种方法的一些缺点可能包括：</p><ol><li>重新生成序列化数据表需要更多时间，因为它需要在生成时计算键集的最小完美哈希。</li><li>如果数据表被检入源代码控制，它们将按哈希顺序存储，而不是按排序顺序存储。这通常会导致更少的二进制差异和更高的存储开销，因为版本之间的更改会更大，而SCM使用的增量编码也不太有效。</li><li>生成的二进制文件略大，因为它存储足够的数据来重构哈希表map以及数据表的实际内容。</li></ol><p>值得注意的是，上面 init 函数中的 <code>bbhash.UnmarshalBBHash</code> 调用的静态初始化开销介于类似于 []byte 的纯静态数据和初始化map之间。
+它需要解析一些位向量，这些位向量在聚合大小为 O(n)，通常每个键不到五个位，并且它通过并解释大多数加载的数据作为小端整数。
+这可以非常快地完成，比构建哈希map快得多，但它不像根本不访问内存那样便宜——如果大型静态数组写入 Golang 二进制文件的数据段中，如果它们未被访问，则在启动时甚至不需要从磁盘中分页。</p><p>如果您通常喜欢完美哈希的某些属性，但不喜欢特定的初始化开销，将 <code>UnmarshalBBHash</code> 移动为延迟加载也可以正常工作。</p><h3 id=总结>总结
+<a class=header-anchor href=#%e6%80%bb%e7%bb%93></a></h3><p>概括一下，我们研究了以下在Dolt二进制文件中嵌入大型静态查找表的方法：</p><table><thead><tr><th>Approach</th><th>Startup Cost</th><th>First Access Cost</th><th>Code Cost</th><th>Build Complexity</th><th>Access Asymptotics</th><th>Runtime Mutability</th></tr></thead><tbody><tr><td>Static Map</td><td>★☆☆☆☆</td><td>★★★★★</td><td>★☆☆☆☆</td><td>★★★★★</td><td>O(1)</td><td>✔️</td></tr><tr><td>Lazy Map</td><td>★★★★★</td><td>★☆☆☆☆</td><td>★☆☆☆☆</td><td>★★★★★</td><td>O(1)</td><td>✔️</td></tr><tr><td>Lazy Map, using embed</td><td>★★★★★</td><td>★☆☆☆☆</td><td>★★★★★</td><td>★★☆☆☆</td><td>O(1)</td><td>✔️</td></tr><tr><td>Static Array</td><td>★★★★★</td><td>★★★★★</td><td>★☆☆☆☆</td><td>★★★★★</td><td>O(lg n) ❌</td><td></td></tr><tr><td>Static Array, using embed</td><td>★★★★★</td><td>★★★★★</td><td>★★★★★</td><td>★★☆☆☆</td><td>O(lg n)</td><td>❌</td></tr><tr><td>Perfect Hash</td><td>★★★★☆</td><td>★★★★★</td><td>★★★★★</td><td>★☆☆☆☆</td><td>O(1)</td><td>❌</td></tr></tbody></table><p>在 Dolt 本身中，我们最终使用了延迟初始化的map，我们从 embed 数据表中在第一次访问时构建。
+外部程序将序列化的数据表写出，然后我们将二进制有效负载检入源代码控制。
+对于我们来说，这很有效，因为这些表缓慢地变化，每个表的中等大小有很多，对于我们大多数客户的大多数 Dolt 调用，只访问其中很少的几个。</p><p>正如您所看到的，Go 工具链和生态系统提供了许多近在手边的方法，希望能够满足您在二进制文件中发布大型查找表的分发和开发人员工程学需求。
+如果您对所提出的方法有反馈或问题，或者只是想谈论使用 Go 进行开发或关于 Dolt 的问题，请加入我们的 Discord。</p></div><footer class=post-footer><div class=post-tags><a href=/tags/go>go</a></div><div class=addthis_inline_share_toolbox style=text-align:center></div><hr><div class=post-nav><div class="post-nav-next post-nav-item"><a href=/posts/bytebufferpool/ rel=next title=源码阅读：github.com/valyala/bytebufferpool><i class="fa fa-chevron-left"></i> 源码阅读：github.com/valyala/bytebufferpool</a></div><div class="post-nav-prev post-nav-item"><a href=/posts/go-socks5.html rel=prev title=Go实现简单SOCKS5代理服务器>Go实现简单SOCKS5代理服务器
+<i class="fa fa-chevron-right"></i></a></div></div></footer></article></div><div id=comments class=post-comments><div class=comment-head><div class=comment-headline><i class="fas fa-comments fa-fw"></i>
+<span>评论交流</span></div></div><div class=comment-wrap><div><div class=comment-loading><i class="fa fa-sync fa-spin"></i></div><div class=waline-container></div></div></div></div></div></main><footer class=footer><div class=footer-inner><div class=copyright>&copy;
+<span itemprop=copyrightYear>2023</span>
+<span class=with-love><i class="fa fa-heart"></i></span>
+<span class=author itemprop=copyrightHolder>Jun</span></div></div></footer><script type=text/javascript src=https://cdn.staticfile.org/animejs/3.2.1/anime.min.js defer></script>
+<script type=text/javascript src=https://cdn.staticfile.org/viewerjs/1.11.0/viewer.min.js defer></script>
+<script class=next-config data-name=main type=application/json>{"bookmark":{"color":"#222","enable":false,"save":"manual"},"copybtn":true,"darkmode":false,"giscus":{"cfg":{"category":"Comments","categoryid":null,"emit":false,"inputposition":"top","mapping":"title","reactions":false,"repo":"username/repo-name","repoid":null,"theme":"preferred_color_scheme"},"js":"https://giscus.app/client.js"},"hostname":"https://junfpyblog.tk/","i18n":{"ds_day":" 天前","ds_days":" 天 ","ds_hour":" 小时前","ds_hours":" 小时 ","ds_just":"刚刚","ds_min":" 分钟前","ds_mins":" 分钟","ds_month":" 个月前","ds_years":" 年 ","empty":"没有找到任何搜索结果：${query}","hits":"找到 ${hits} 个搜索结果","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","placeholder":"搜索..."},"lang":"zh-CN","lazyload":false,"localSearch":{"enable":true,"path":"/searchindexes.xml","preload":false,"topnperarticle":-1,"trigger":"auto","unescape":false},"motion":{"async":true,"enable":true,"transition":{"collheader":"fadeInLeft","postblock":"fadeIn","postbody":"fadeInDown","postheader":"fadeInDown","sidebar":"fadeInUp"}},"postmeta":{"comments":null,"views":null},"root":"/","scheme":"Gemini","sidebar":{"display":"post","offset":12,"padding":18,"position":"left","width":256},"statis":{"enable":true,"plugin":"busuanzi"},"vendor":{"plugins":"qiniu","router":"https://cdn.staticfile.org"},"version":"4.5.0","waline":{"cfg":{"comment":true,"emoji":["//unpkg.com/@waline/emojis@1.1.0/weibo","//unpkg.com/@waline/emojis@1.1.0/bilibili","//unpkg.com/@waline/emojis@1.1.0/tieba","//unpkg.com/@waline/emojis@1.1.0/alus","//unpkg.com/@waline/emojis@1.1.0/qq","//unpkg.com/@waline/emojis@1.1.0/tw-emoji"],"imguploader":false,"pageview":true,"placeholder":"请文明发言哟 ヾ(≧▽≦*)o","reaction":true,"reactiontext":["点赞","踩一下","得意","不屑","尴尬","睡觉"],"reactiontitle":"你认为这篇文章怎么样？","requiredmeta":["nick"],"serverurl":"https://waline-guw7ovgeu-jun-f.vercel.app","sofa":"快来发表你的意见吧 (≧∀≦)ゞ","wordlimit":200},"css":{"alias":"waline","file":"dist/waline.css","name":"@waline/client","version":"2.13.0"},"js":{"alias":"waline","file":"dist/waline.js","name":"@waline/client","version":"2.13.0"}}}</script><script type=text/javascript src=/js/main.min.680e0e47c7981dad518ca98b339b740fe15a2c758661acd9fed327b98d0e7c92.js defer></script></body></html>
