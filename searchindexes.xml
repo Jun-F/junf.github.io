@@ -1,5 +1,60 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>Getting Friendly With Cpu Caches</title><url>/posts/getting-friendly-with-cpu-caches/</url><categories><category>go</category></categories><tags><tag>go</tag></tags><content type="html">文章翻译，原文链接：https://www.ardanlabs.com/blog/2023/07/getting-friendly-with-cpu-caches.html
-理解 CPU 缓存的重要性，以及利用CPU缓存提升程序的性能和质量。</content></entry><entry><title>bytebufferpool 源码阅读</title><url>/posts/bytebufferpool/</url><categories><category>go</category></categories><tags><tag>go</tag><tag>byte buffer pool</tag></tags><content type="html"><![CDATA[高性能字节池 bytebufferpool 源码阅读
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>Getting Friendly With Cpu Caches</title><url>/posts/getting-friendly-with-cpu-caches/</url><categories><category>go</category></categories><tags><tag>go</tag></tags><content type="html"><![CDATA[文章翻译，原文链接：https://www.ardanlabs.com/blog/2023/07/getting-friendly-with-cpu-caches.html
+理解 CPU 缓存的重要性，以及利用CPU缓存提升程序的性能和质量。文中基准测试的结果替换为我本地执行的结果。
+介绍 当 CPU 需要访问一段数据时，数据需要从主存储器进入处理器。
+这种架构看起来是这样的：
+图一：
+图1显示了一段数据必须经过的不同内存层才能被处理器访问。 每个CPU都有自己的L1和L2缓存，L3缓存在所有CPU之间共享。 当数据最终进入L1或L2高速缓存时，处理器可以出于执行目的访问它。 在英特尔体系结构上，三级缓存维护L1和L2中的内容的副本。
+性能最终取决于数据流入处理器的效率。 从图中可以看出，由于数据需要移动和复制，内存访问速度比访问一级缓存慢大约80倍。
+一个例子 这可能很有趣，但作为开发人员，这对您有什么影响？
+一起来看看。
+假设您有以下 User 结构体：
+Listing 1:
+type Image [128 * 128]byte type User struct { Login string Active bool Icon Image Country string } Listing 1展示了一个名为 User 的结构体，在第 1 行，该结构体有一个Image字段，定义为 128×128 的字节数组。 这是一个 16k 字节（16,384）的连续内存块。
+你可能想知道为什么图标字段是用户结构的一部分？ 其中一个原因可能是为了在客户端从系统中检索用户时节省 API 调用。 这样，客户端就不需要进行第二次调用来获取图标图像了。
+现在假设您需要添加一个 API，用于按国家/地区统计系统中的活跃用户数量。
+Listing 2
+// CountryCount returns a map of countries to the number of active users. func CountryCount(users []User) map[string]int { counts := make(map[string]int) // country -&gt; count for _, u := range users { if !u.Active { continue } counts[u.Country]++ } return counts } 基准测试 这个 API 工作得很好，但随后您决定对该函数进行基准测试。
+Listing 3
+var users []User func init() { const size = 10_000 countries := []string{ &#34;AD&#34;, &#34;BB&#34;, &#34;CA&#34;, &#34;DK&#34;, } users = make([]User, size) for i := 0; i &lt; size; i++ { users[i].Active = i%5 &gt; 0 // 20% non active users[i].Country = countries[i%len(countries)] } } func BenchmarkCountryCount(b *testing.B) { for i := 0; i &lt; b.N; i++ { m := CountryCount(users) if m == nil { b.Fatal(m) } } } Listing 3 展示了基准测试代码。 在第03-18行，声明了一个init函数来初始化基准测试的数据。 在第13行，构造了一个切片来容纳10000个用户，其中20%被设置为非活动用户。 在第20-27行，声明并编写基准函数以调用基准循环中的CountryCount函数。
+Listing 4
+我本地运行的结果：
+$ go test -bench . -benchtime 10s -count 5 goos: linux goarch: amd64 pkg: test cpu: Intel(R) Core(TM) i5-6500 CPU @ 3.20GHz BenchmarkCountryCount-4 1966 5883585 ns/op BenchmarkCountryCount-4 2044 5880595 ns/op BenchmarkCountryCount-4 2034 5877615 ns/op BenchmarkCountryCount-4 2008 5891777 ns/op BenchmarkCountryCount-4 2062 5859283 ns/op PASS ok test 62.566s Listing 4 显示了如何运行基准测试并提供结果。 第一行使用 Go test 命令运行基准函数 5 次，每次至少 10 秒。 基准测试结果平均为每次操作 5,883,585 纳秒，即每次操作 ~5.88ms。
+注意：运行基准测试时应注意单位。 go 工具通常以纳秒为单位进行报告，但您可能需要转换为其他单位。 常用的单位有纳秒 (ns)、微秒 (μs) 和毫秒 (ms)。 如果您看到以下以纳秒为单位的数字 123,456,789，则 789 为 ns，456 为 μs，123 为 ms。逗号是你的朋友。
+你应该为你的代码设定性能目标，如果~5.88ms达到了这些目标，那么就不要为了让代码运行得更快而修改代码！
+假设您需要更好的性能。如何开始对性能进行剖析？你应该寻找什么？
+让我们从检查缓存未命中情况开始。
+缓存未命中 让我们来看看我用来运行此代码的CPU缓存的大小：
+Listing 5
+$ lscpu --caches NAME ONE-SIZE ALL-SIZE WAYS TYPE LEVEL SETS PHY-LINE COHERENCY-SIZE L1d 32K 128K 8 Data 1 64 1 64 L1i 32K 128K 8 Instruction 1 64 1 64 L2 256K 1M 4 Unified 2 1024 1 64 L3 6M 6M 12 Unified 3 8192 1 64 Listing 5 显示了如何获取 CPU 缓存信息。您可以看到每个缓存的大小：L1 为 32K，L2 为 256M，L3 为 6M。
+请记住，User 结构体中的 Icon 字段需要约 16k 字节的连续内存。 当您将其与我们为基准测试创建的 10k 用户相乘时，该切片需要约 163 MiB 的连续内存。 这意味着该切片一旦构建就无法完全放入任何缓存中。
+这将导致硬件对内存造成冲击，因为它不断需要将读取的切片中的每个元素的数据从主内存移动到缓存。 即使内存是连续布局的，系统也会表现得好像存在随机存取内存一样。
+要验证缓存未命中是否不会让程序运行得尽可能快，您可以使用 Linux [perf][https://perf.wiki.kernel.org/index.php/Main_Page] 程序。 perf 命令适用于可执行文件，因此您需要直接运行测试可执行文件，而不是通过 go test 运行。
+默认情况下，将在运行测试结束时删除测试可执行文件， 因此请使用 go test -c 标志保留执行文件。
+Listing 6
+$ go test -c $ ls *.test users.test Listing 6 显示了如何构建并保持测试可执行文件。获得测试可执行文件后，您可以在 perf 下运行它。
+Listing 7
+$ perf stat -e cache-misses ./users.test -test.bench . -test.benchtime=10s -test.count=5 goos: linux goarch: amd64 pkg: test cpu: Intel(R) Core(TM) i5-6500 CPU @ 3.20GHz BenchmarkCountryCount-4 1958 5927578 ns/op BenchmarkCountryCount-4 2007 5966882 ns/op BenchmarkCountryCount-4 2005 6337220 ns/op BenchmarkCountryCount-4 1824 6805542 ns/op BenchmarkCountryCount-4 1987 6004175 ns/op PASS Performance counter stats for &#39;./test.test -test.bench . -test.benchtime=10s -test.count=5&#39;: 7855698103 cache-misses:u 63.845414182 seconds time elapsed 63.361868000 seconds user 0.849890000 seconds sys Listing 7 展示了如何使用 perf 命令运行测试可执行文件。 您可以看到核心 CPU 和原子 CPU 上发生的缓存未命中次数。 在CPU上执行基准测试期间，缓存未命中次数约为 78 亿次。
+使用Slice 如何减少缓存未命中次数？如果我们缩小 User 结构体的大小，使缓存中同时容纳更多的用户值， 就可以减少缓存未命中的次数。 现在，L1 缓存中一次只能容纳几个用户值。使用切片可以大大减小 User 值的大小。
+但这为什么会有帮助呢？让我们看一下语言中切片值的声明。
+https://github.com/golang/go/blob/master/src/runtime/slice.go#L15 Listing 8
+type slice struct { array unsafe.Pointer len int cap int } Listing 8显示了 Go 中切片的声明。在 64 位操作系统上，整数为 64 位或 8 个字节。 这意味着切片值总共有 24 个字节。 通过使用切片，我们可以将用户值的大小从约 16k+ 字节减少到 24 字节。一个重大的变化。
+Listing 9
+type Image []byte type User struct { Login string Active bool Icon Image Country string } func CountryCount(users []User) map[string]int { counts := make(map[string]int) // country -&gt; count for _, u := range users { if !u.Active { continue } counts[u.Country]++ } return counts } Listing 9显示了 Image 和 User 类型的新实现。唯一的变化是第 03 行，它使用了切片和底层类型。
+为了公平起见，让我们更改基准代码以在用户初始化时为icons分配内存。该内存不再随着users的构造而分配。
+Listing 10
+var users []User func init() { const size = 10_000 countries := []string{ &#34;AD&#34;, &#34;BB&#34;, &#34;CA&#34;, &#34;DK&#34;, } users = make([]User, size) for i := 0; i &lt; size; i++ { users[i].Active = i%5 &gt; 0 // 20% non active	users[i].Country = countries[i%len(countries)] users[i].Icon = make([]byte, 128*128) } } 新的基准代码唯一的变化是增加了1行，为 Icon 字段分配内存。
+现在让我们再次运行基准测试。
+Listing 11
+$ go test -bench . -benchtime=10s -count=5	goos: linux goarch: amd64 pkg: test cpu: Intel(R) Core(TM) i5-6500 CPU @ 3.20GHz BenchmarkCountryCount-4 99472 119575 ns/op BenchmarkCountryCount-4 100154 119601 ns/op BenchmarkCountryCount-4 101049 119761 ns/op BenchmarkCountryCount-4 100350 119680 ns/op BenchmarkCountryCount-4 100460 119528 ns/op PASS ok test 66.171s Listing 11显示了基准测试的第二次运行。 您可以看到现在每个操作的平均值为 119,601ns 或 ~119 微秒。比以前的版本快大约~49.4倍。
+为了确保缓存未命中次数更少，让我们再次在 perf 下运行代码。
+Listing 12
+$ perf stat -e cache-misses ./users.test -test.bench . -test.benchtime=10s -test.count=5 goos: linux goarch: amd64 pkg: test cpu: Intel(R) Core(TM) i5-6500 CPU @ 3.20GHz BenchmarkCountryCount-4 95760 143196 ns/op BenchmarkCountryCount-4 97128 129585 ns/op BenchmarkCountryCount-4 89460 129624 ns/op BenchmarkCountryCount-4 95626 121016 ns/op BenchmarkCountryCount-4 95607 126021 ns/op PASS Performance counter stats for &#39;./users.test -test.bench . -test.benchtime=10s -test.count=5&#39;: 212259011 cache-misses:u 68.057638064 seconds time elapsed 67.290619000 seconds user 1.162602000 seconds sys Listing 12显示了 的 perf 第二次运行。 您可以看到现在CPU上有2亿次缓存未命中。回到Listing 6，您将看到原始值以十亿为单位。
+现在，缓存中容纳了更多的User，我们看到缓存未命中次数减少了，性能也提高了。
+总结 我喜欢为客户优化代码的原因之一是我需要学习的知识范围。不仅包括数据结构和算法，还包括计算机体系结构、Go 运行时如何工作、网络等等。我还可以使用很酷的新工具（例如 perf）
+您从一个小的代码更改中获得了显着的性能提升，但并非没有免费的午餐。
+代码风险更大，因为现在 Icon 可能是 nil .
+您还需要在每个结构的 User 堆上分配内存，堆分配需要更多时间。 最后，垃圾收集器需要更加努力地工作，因为我们在堆上有更多的数据。
+]]></content></entry><entry><title>bytebufferpool 源码阅读</title><url>/posts/bytebufferpool/</url><categories><category>go</category></categories><tags><tag>go</tag><tag>byte buffer pool</tag></tags><content type="html"><![CDATA[高性能字节池 bytebufferpool 源码阅读
 仓库地址： https://github.com/valyala/bytebufferpool 使用 package main import ( &#34;fmt&#34; &#34;github.com/valyala/bytebufferpool&#34; ) func main() { // 从池中取出一个对象 b := bytebufferpool.Get() b.WriteString(&#34;hello&#34;) b.WriteByte(&#39;,&#39;) b.WriteString(&#34; world!&#34;) fmt.Println(b.String()) // 用完后放回去 bytebufferpool.Put(b) } 源码阅读 源码主要包含两个文件，bytebuffer.go 和 pool.go, bytebuffer.go主要定义了一个ByteBuffer结构体以及一些读取、写入的方法， 池的实现主要是在pool.go。
 pool的结构体定义如下：
 type Pool struct { calls [steps]uint64 //记录不同长度的索引的使用次数 calibrating uint64 //防止校准并发的标志位 defaultSize uint64 //初始化[]byte的默认值 maxSize uint64 //可放回pool中的最大[]byte长度 pool sync.Pool } 首先看Get方法，从sync.Pool中取出一个对象，如果没有就初始化一个ByteBuffer，然后返回。
