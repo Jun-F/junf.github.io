@@ -18,7 +18,7 @@
 <span class=post-meta-item title=阅读><span class=post-meta-item-icon><i class="far fa-clock"></i></span>
 <span class=post-meta-item-text>阅读：&ap;</span>
 <span>6分钟</span></span></div></div></header><div class=post-body itemprop=articleBody><p>文章翻译，原文链接：https://www.ardanlabs.com/blog/2023/07/getting-friendly-with-cpu-caches.html</p><p>理解 CPU 缓存的重要性，以及利用CPU缓存提升程序的性能和质量。文中基准测试的结果替换为我本地执行的结果。</p><h1 id=介绍>介绍
-<a class=header-anchor href=#%e4%bb%8b%e7%bb%8d></a></h1><p>当 CPU 需要访问一段数据时，数据需要从主存储器进入处理器。</p><p>这种架构看起来是这样的：</p><p>图一：</p><img src=https://www.ardanlabs.com/images/goinggo/182_figure1.png><p>图1显示了一段数据必须经过的不同内存层才能被处理器访问。
+<a class=header-anchor href=#%e4%bb%8b%e7%bb%8d></a></h1><p>当 CPU 需要访问一段数据时，数据需要从主存储器进入处理器。</p><p>这种架构看起来是这样的：</p><p>图一：</p><p><img src=/imgs/img-lazy-loading.gif data-src=https://s3.bmp.ovh/imgs/2023/08/16/a01a7015da3be431.png alt></p><p>图1显示了一段数据必须经过的不同内存层才能被处理器访问。
 每个CPU都有自己的L1和L2缓存，L3缓存在所有CPU之间共享。
 当数据最终进入L1或L2高速缓存时，处理器可以出于执行目的访问它。
 在英特尔体系结构上，三级缓存维护L1和L2中的内容的副本。</p><p>性能最终取决于数据流入处理器的效率。
