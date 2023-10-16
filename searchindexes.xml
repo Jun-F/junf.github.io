@@ -1,4 +1,12 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>Getting Friendly With Cpu Caches</title><url>/posts/getting-friendly-with-cpu-caches/</url><categories><category>go</category></categories><tags><tag>go</tag></tags><content type="html"><![CDATA[文章翻译，原文链接：https://www.ardanlabs.com/blog/2023/07/getting-friendly-with-cpu-caches.html
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>postgresql学习（一）：安装、权限体系</title><url>/posts/postgresql-learn-install/</url><categories><category>postgresql</category></categories><tags><tag>数据库</tag><tag>postgresql</tag></tags><content type="html"><![CDATA[postgresql学习（一）：安装、权限体系
+安装 可以通过不同Linux发行版的包管理器进行安装，以Ubuntu为例： 点击进入 postgresql下载网页 ，选择相应的平台和Liunx发行版，按照提示执行：
+# Create the file repository configuration: sudo sh -c &#39;echo &#34;deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main&#34; &gt; /etc/apt/sources.list.d/pgdg.list&#39; # Import the repository signing key: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - # Update the package lists: sudo apt-get update # Install the latest version of PostgreSQL. # If you want a specific version, use &#39;postgresql-12&#39; or similar instead of &#39;postgresql&#39;: sudo apt-get -y install postgresql 也可以根据源代码构建。
+启动、停止、重启命令：
+sudo /etc/init.d/postgresql start # 开启 sudo /etc/init.d/postgresql stop # 关闭 sudo /etc/init.d/postgresql restart # 重启 安装后默认启动，默认监听为127.0.0.1:5432，只能本地访问。 修改为任意地址访问：
+#修改后使PostgreSQL可以接受来自任意IP的连接请求： sudo vi /etc/postgresql/16/main/postgresql.conf listen_addresses = &#39;*&#39; #默认pg只允许本机通过密码认证登录，修改后即可以对任意IP访问进行密码验证 sudo vi /etc/postgresql/16/main/pg_hba.conf # TYPE DATABASE USER CIDR-ADDRESS METHOD host all all 0.0.0.0/0 scram-sha-256 之后重启postgresql。
+命令行使用：
+sudo -i -u postgres psql 用户权限 引用： 浅谈PostgreSQL用户权限 赋予权限： 首先你把数据库connect的权限赋予用户 再则你需要把table1所在的schema的使用权限赋予用户 最后你需要把table的权限赋予用户
+#创建用户、密码 CREATE USER test WITH PASSWORD &#39;1111&#39;; #创建数据库 create database db1 owner test; #查看现有用户及权限 \du #查看所有数据库 \l #使用用户test登录db1 \c db1 test #赋予创建数据库权限 alter user test createdb; #赋予创建schema权限 GRANT CREATE ON DATABASE db1 TO test; ]]></content></entry><entry><title>Getting Friendly With Cpu Caches</title><url>/posts/getting-friendly-with-cpu-caches/</url><categories><category>go</category></categories><tags><tag>go</tag></tags><content type="html"><![CDATA[文章翻译，原文链接：https://www.ardanlabs.com/blog/2023/07/getting-friendly-with-cpu-caches.html
 理解 CPU 缓存的重要性，以及利用CPU缓存提升程序的性能和质量。文中基准测试的结果替换为我本地执行的结果。
 介绍 当 CPU 需要访问一段数据时，数据需要从主存储器进入处理器。
 这种架构看起来是这样的：
