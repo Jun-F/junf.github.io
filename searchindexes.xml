@@ -1,4 +1,9 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>postgresql学习（一）：安装、权限体系</title><url>/posts/postgresql-learn-install/</url><categories><category>postgresql</category></categories><tags><tag>数据库</tag><tag>postgresql</tag></tags><content type="html"><![CDATA[postgresql学习（一）：安装、权限体系
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>记录有用或有意思的golang package</title><url>/posts/useful-go-package/</url><categories><category>golang</category></categories><tags><tag>golang</tag></tags><content type="html">记录看到/使用过的有用/有意思的golang package（不定时更新）
+1、给golang的windows可执行程序添加图标
+项目地址：
+rsrc go-winres 2、golang 编写桌面程序
+Wails：使用 Go 和 Web 技术创建桌面应用程序 wails fyne：使用 Go 开发的跨平台GUI fyne 3、golang并发
+Conc：go中的结构化并发库，使常见任务更容易、更安全 conc</content></entry><entry><title>postgresql学习（一）：安装、权限体系</title><url>/posts/postgresql-learn-install/</url><categories><category>postgresql</category></categories><tags><tag>数据库</tag><tag>postgresql</tag></tags><content type="html"><![CDATA[postgresql学习（一）：安装、权限体系
 安装 可以通过不同Linux发行版的包管理器进行安装，以Ubuntu为例： 点击进入 postgresql下载网页 ，选择相应的平台和Liunx发行版，按照提示执行：
 # Create the file repository configuration: sudo sh -c &#39;echo &#34;deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main&#34; &gt; /etc/apt/sources.list.d/pgdg.list&#39; # Import the repository signing key: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - # Update the package lists: sudo apt-get update # Install the latest version of PostgreSQL. # If you want a specific version, use &#39;postgresql-12&#39; or similar instead of &#39;postgresql&#39;: sudo apt-get -y install postgresql 也可以根据源代码构建。
 启动、停止、重启命令：
