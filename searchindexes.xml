@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>记录有用或有意思的golang package</title><url>/posts/useful-go-package/</url><categories><category>golang</category></categories><tags><tag>golang</tag></tags><content type="html">记录看到/使用过的有用/有意思的golang package（不定时更新）
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><search><entry><title>记录有用或有意思的golang package</title><url>/posts/useful-go-package/</url><categories><category>go</category></categories><tags><tag>go</tag></tags><content type="html">记录看到/使用过的有用/有意思的golang package（不定时更新）
 1、给golang的windows可执行程序添加图标
 项目地址：
 rsrc go-winres 2、golang 编写桌面程序
